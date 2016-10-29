@@ -1,5 +1,7 @@
+#i'm using python3
 import numpy as np
 from scipy import sparse
+from scipy.special import expit
 
 
 class LogisticRegression:
@@ -34,7 +36,7 @@ class LogisticRegression:
 
         # Run stochastic gradient descent to optimize W
         self.loss_history = []
-        for it in xrange(num_iters):
+        for it in range(num_iters):
             #########################################################################
             # TODO:                                                                 #
             # Sample batch_size elements from the training data and their           #
@@ -46,8 +48,11 @@ class LogisticRegression:
             # Hint: Use np.random.choice to generate indices. Sampling with         #
             # replacement is faster than sampling without replacement.              #
             #########################################################################
-
-
+            X_batch = None
+            y_batch = None            
+            rand_idx = np.random.choice(num_train, batch_size)
+            X_batch = X[rand_idx, :]
+            y_batch = y[rand_idx]
             #########################################################################
             #                       END OF YOUR CODE                                #
             #########################################################################
@@ -60,14 +65,14 @@ class LogisticRegression:
             # TODO:                                                                 #
             # Update the weights using the gradient and the learning rate.          #
             #########################################################################
-
+            self.w += -1 * learning_rate * gradW
 
             #########################################################################
             #                       END OF YOUR CODE                                #
             #########################################################################
 
             if verbose and it % 100 == 0:
-                print 'iteration %d / %d: loss %f' % (it, num_iters, loss)
+                print('iteration %d / %d: loss %f' % (it, num_iters, loss))
 
         return self
 
@@ -91,11 +96,12 @@ class LogisticRegression:
         # Implement this method. Store the probabilities of classes in y_proba.   #
         # Hint: It might be helpful to use np.vstack and np.sum                   #
         ###########################################################################
+        y_proba = np.vstack((expit(X.dot(self.w)), 1 - expit(X.dot(self.w))))
 
 
 
         ###########################################################################
-        #                           END OF YOUR CODE                              #
+        #                           END OF Your CODE                              #
         ###########################################################################
         return y_proba
 
@@ -117,7 +123,7 @@ class LogisticRegression:
         # Implement this method. Store the predicted labels in y_pred.            #
         ###########################################################################
         y_proba = self.predict_proba(X, append_bias=True)
-        y_pred = ...
+        y_pred = [1 if y_proba[0][i] >= .5 else -1 for i in range(len(y_proba[0]))]
 
         ###########################################################################
         #                           END OF YOUR CODE                              #
@@ -137,7 +143,16 @@ class LogisticRegression:
         dw = np.zeros_like(self.w)  # initialize the gradient as zero
         loss = 0
         # Compute loss and gradient. Your code should not contain python loops.
+        sig = (1 + np.exp(-X_batch.dot(self.w) * y_batch))
+        loss =  np.sum(np.log(sig))
+        dw = X_batch.T.dot((1./sig - 1) *  y_batch)
+        num_train = X_batch.shape[0]
+        
+        loss /= num_train
+        dw /= num_train
 
+        loss += .5 * reg * np.dot(self.w[:-1], self.w[:-1])
+        dw[:-1] += reg * self.w[:-1]
 
         # Right now the loss is a sum over all training examples, but we want it
         # to be an average instead so we divide by num_train.
